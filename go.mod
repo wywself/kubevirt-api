@@ -1,4 +1,4 @@
-module agile-paas/virt-compute/kubevirt/api
+module github.com/wywself/kubevirt-api
 
 go 1.17
 
