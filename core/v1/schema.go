@@ -839,6 +839,8 @@ type VolumeSource struct {
 	MemoryDump *MemoryDumpVolumeSource `json:"memoryDump,omitempty"`
 	// BitmapVolume is attached to the virt launcher and is populated with a bitmap of the vmi
 	BitmapVolume *BitmapVolumeSource `json:"bitmapVolume,omitempty"`
+	// BackupVolume is attached to the virt launcher and is populated with backup disk of the vmi
+	BackupVolume *BackupVolumeSource `json:"backupVolume,omitempty"`
 }
 
 // HotplugVolumeSource Represents the source of a volume to mount which are capable
@@ -858,6 +860,8 @@ type HotplugVolumeSource struct {
 	// the process of populating that PVC with bitmap.
 	// +optional
 	BitmapVolume *BitmapVolumeSource `json:"bitmapVolume,omitempty"`
+	// the same to bitmapSource, But used to restore backup disk
+	BackupVolume *BackupVolumeSource `json:"backupVolume,omitempty"`
 }
 
 type DataVolumeSource struct {
@@ -887,6 +891,13 @@ type MemoryDumpVolumeSource struct {
 }
 
 type BitmapVolumeSource struct {
+	// PersistentVolumeClaimVolumeSource represents a reference to a PersistentVolumeClaim in the same namespace.
+	// Directly attached to the virt launcher
+	// +optional
+	PersistentVolumeClaimVolumeSource `json:",inline"`
+}
+
+type BackupVolumeSource struct {
 	// PersistentVolumeClaimVolumeSource represents a reference to a PersistentVolumeClaim in the same namespace.
 	// Directly attached to the virt launcher
 	// +optional

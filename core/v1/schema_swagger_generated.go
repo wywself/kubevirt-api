@@ -450,6 +450,7 @@ func (VolumeSource) SwaggerDoc() map[string]string {
 		"downwardMetrics":       "DownwardMetrics adds a very small disk to VMIs which contains a limited view of host and guest\nmetrics. The disk content is compatible with vhostmd (https://github.com/vhostmd/vhostmd) and vm-dump-metrics.",
 		"memoryDump":            "MemoryDump is attached to the virt launcher and is populated with a memory dump of the vmi",
 		"bitmapVolume":          "BitmapVolume is attached to the virt launcher and is populated with a bitmap of the vmi",
+		"backupVolume":          "BackupVolume is attached to the virt launcher and is populated with backup disk of the vmi",
 	}
 }
 
@@ -459,6 +460,7 @@ func (HotplugVolumeSource) SwaggerDoc() map[string]string {
 		"persistentVolumeClaim": "PersistentVolumeClaimVolumeSource represents a reference to a PersistentVolumeClaim in the same namespace.\nDirectly attached to the vmi via qemu.\nMore info: https://kubernetes.io/docs/concepts/storage/persistent-volumes#persistentvolumeclaims\n+optional",
 		"dataVolume":            "DataVolume represents the dynamic creation a PVC for this volume as well as\nthe process of populating that PVC with a disk image.\n+optional",
 		"bitmapVolume":          "BitmapVolume represents the dynamic creation a PVC for this volume as well as\nthe process of populating that PVC with bitmap.\n+optional",
+		"backupVolume":          "the same to bitmapSource, But used to restore backup disk",
 	}
 }
 
@@ -481,6 +483,10 @@ func (MemoryDumpVolumeSource) SwaggerDoc() map[string]string {
 }
 
 func (BitmapVolumeSource) SwaggerDoc() map[string]string {
+	return map[string]string{}
+}
+
+func (BackupVolumeSource) SwaggerDoc() map[string]string {
 	return map[string]string{}
 }
 
