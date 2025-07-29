@@ -517,6 +517,11 @@ func (in *CloudInitConfigDriveSource) DeepCopyInto(out *CloudInitConfigDriveSour
 		*out = new(corev1.LocalObjectReference)
 		**out = **in
 	}
+	if in.MetaDataSecretRef != nil {
+		in, out := &in.MetaDataSecretRef, &out.MetaDataSecretRef
+		*out = new(corev1.LocalObjectReference)
+		**out = **in
+	}
 	return
 }
 
