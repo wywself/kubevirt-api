@@ -1367,7 +1367,8 @@ type VirtualMachineInstanceMigrationList struct {
 
 type VirtualMachineInstanceMigrationSpec struct {
 	// The name of the VMI to perform the migration on. VMI must exist in the migration objects namespace
-	VMIName string `json:"vmiName,omitempty" valid:"required"`
+	VMIName        string `json:"vmiName,omitempty" valid:"required"`
+	TargetNodeName string `json:"targetNodeName,omitempty"`
 }
 
 // VirtualMachineInstanceMigrationPhaseTransitionTimestamp gives a timestamp in relation to when a phase is set on a vmi
@@ -2242,7 +2243,8 @@ type MigrateOptions struct {
 	// - All: all dry run stages will be processed
 	// +optional
 	// +listType=atomic
-	DryRun []string `json:"dryRun,omitempty" protobuf:"bytes,1,rep,name=dryRun"`
+	DryRun         []string `json:"dryRun,omitempty" protobuf:"bytes,1,rep,name=dryRun"`
+	TargetNodeName string   `json:"targetNodeName,omitempty"`
 }
 
 // VirtualMachineInstanceGuestAgentInfo represents information from the installed guest agent

@@ -35,6 +35,7 @@ func (VirtualMachineInstanceSpec) SwaggerDoc() map[string]string {
 		"hostname":                      "Specifies the hostname of the vmi\nIf not specified, the hostname will be set to the name of the vmi, if dhcp or cloud-init is configured properly.\n+optional",
 		"subdomain":                     "If specified, the fully qualified vmi hostname will be \"<hostname>.<subdomain>.<pod namespace>.svc.<cluster domain>\".\nIf not specified, the vmi will not have a domainname at all. The DNS entry will resolve to the vmi,\nno matter if the vmi itself can pick up a hostname.\n+optional",
 		"networks":                      "List of networks that can be attached to a vm's virtual interface.",
+		"hostDevices":                   "List of hostDevices that can be attached to a vm's host device.\n+optional\n+listType=atomic",
 		"dnsPolicy":                     "Set DNS policy for the pod.\nDefaults to \"ClusterFirst\".\nValid values are 'ClusterFirstWithHostNet', 'ClusterFirst', 'Default' or 'None'.\nDNS parameters given in DNSConfig will be merged with the policy selected with DNSPolicy.\nTo have DNS options set along with hostNetwork, you have to specify DNS policy\nexplicitly to 'ClusterFirstWithHostNet'.\n+optional",
 		"dnsConfig":                     "Specifies the DNS parameters of a pod.\nParameters specified here will be merged to the generated DNS\nconfiguration based on DNSPolicy.\n+optional",
 		"accessCredentials":             "Specifies a set of public keys to inject into the vm guest\n+listType=atomic\n+optional",
@@ -63,6 +64,7 @@ func (VirtualMachineInstanceStatus) SwaggerDoc() map[string]string {
 		"phase":                         "Phase is the status of the VirtualMachineInstance in kubernetes world. It is not the VirtualMachineInstance status, but partially correlates to it.",
 		"phaseTransitionTimestamps":     "PhaseTransitionTimestamp is the timestamp of when the last phase change occurred\n+listType=atomic\n+optional",
 		"interfaces":                    "Interfaces represent the details of available network interfaces.",
+		"hostDeviceStatus":              "HostDeviceStatus represent the details of hotplug host devices.\n+optional\n+listType=atomic",
 		"guestOSInfo":                   "Guest OS Information",
 		"migrationState":                "Represents the status of a live migration",
 		"migrationMethod":               "Represents the method using which the vmi can be migrated: live migration or block migration",
@@ -110,6 +112,23 @@ func (VolumeStatus) SwaggerDoc() map[string]string {
 		"size":                      "Represents the size of the volume",
 		"memoryDumpVolume":          "If the volume is memorydump volume, this will contain the memorydump info.",
 		"containerDiskVolume":       "ContainerDiskVolume shows info about the containerdisk, if the volume is a containerdisk",
+	}
+}
+
+func (DeviceAddress) SwaggerDoc() map[string]string {
+	return map[string]string{}
+}
+
+func (HostDeviceStatus) SwaggerDoc() map[string]string {
+	return map[string]string{
+		"":             "HostDeviceStatus represents information about the status of host devices attached to the pod.",
+		"name":         "Name is the name of the host device",
+		"target":       "Target is the target name used when adding the host device to the VM, eg: usb",
+		"usb":          "An usb host device attach to the pod.",
+		"phase":        "Phase is the phase",
+		"reason":       "Reason is a brief description of why we are in the current hotplug host device phase",
+		"message":      "Message is a detailed message about the current hotplug host device phase",
+		"hotpluggable": "Hotpluggable indicates whether the device can be hotplugged and hotunplugged.\n+optional",
 	}
 }
 
@@ -385,6 +404,7 @@ func (VirtualMachineStatus) SwaggerDoc() map[string]string {
 		"conditions":             "Hold the state information of the VirtualMachine and its VirtualMachineInstance",
 		"stateChangeRequests":    "StateChangeRequests indicates a list of actions that should be taken on a VMI\ne.g. stop a specific VMI then start a new one.",
 		"volumeRequests":         "VolumeRequests indicates a list of volumes add or remove from the VMI template and\nhotplug on an active running VMI.\n+listType=atomic",
+		"hostDeviceRequests":     "HostDeviceRequests indicates a list of host devices add or remove from the VMI template and\nhotplug on an active running VMI.\n+listType=atomic",
 		"volumeSnapshotStatuses": "VolumeSnapshotStatuses indicates a list of statuses whether snapshotting is\nsupported by each volume.",
 		"startFailure":           "StartFailure tracks consecutive VMI startup failures for the purposes of\ncrash loop backoffs\n+nullable\n+optional",
 		"memoryDumpRequest":      "MemoryDumpRequest tracks memory dump request phase and info of getting a memory\ndump to the given pvc\n+nullable\n+optional",
@@ -405,6 +425,13 @@ func (VirtualMachineVolumeRequest) SwaggerDoc() map[string]string {
 	return map[string]string{
 		"addVolumeOptions":    "AddVolumeOptions when set indicates a volume should be added. The details\nwithin this field specify how to add the volume",
 		"removeVolumeOptions": "RemoveVolumeOptions when set indicates a volume should be removed. The details\nwithin this field specify how to add the volume",
+	}
+}
+
+func (VirtualMachineHostDeviceRequest) SwaggerDoc() map[string]string {
+	return map[string]string{
+		"addHostDeviceOptions":    "AddHostDeviceOptions when set indicates a host device should be added. The details\nwithin this field specify how to add the host device",
+		"removeHostDeviceOptions": "RemoveHostDeviceOptions when set indicates a host device should be removed. The details\nwithin this field specify how to remove the host device",
 	}
 }
 
@@ -697,6 +724,24 @@ func (RemoveVolumeOptions) SwaggerDoc() map[string]string {
 	return map[string]string{
 		"":       "RemoveVolumeOptions is provided when dynamically hot unplugging volume and disk",
 		"name":   "Name represents the name that maps to both the disk and volume that\nshould be removed",
+		"dryRun": "When present, indicates that modifications should not be\npersisted. An invalid or unrecognized dryRun directive will\nresult in an error response and no further processing of the\nrequest. Valid values are:\n- All: all dry run stages will be processed\n+optional\n+listType=atomic",
+	}
+}
+
+func (AddHostDeviceOptions) SwaggerDoc() map[string]string {
+	return map[string]string{
+		"":                 "AddHostDeviceOptions is provided when dynamically hot plugging a host device",
+		"name":             "Name represents the name that maps to both the host device that\nshould be added",
+		"hostDevice":       "HostDevice represents the hotplug host device that will be plugged into the running VMI",
+		"hostDeviceSource": "HostDeviceSource is attached to the virt launcher and is populated with a host device of the vmi",
+		"dryRun":           "When present, indicates that modifications should not be\npersisted. An invalid or unrecognized dryRun directive will\nresult in an error response and no further processing of the\nrequest. Valid values are:\n- All: all dry run stages will be processed\n+optional\n+listType=atomic",
+	}
+}
+
+func (RemoveHostDeviceOptions) SwaggerDoc() map[string]string {
+	return map[string]string{
+		"":       "RemoveHostDeviceOptions is provided when dynamically hot unplugging host device",
+		"name":   "Name represents the name that maps to both the host device that\nshould be removed",
 		"dryRun": "When present, indicates that modifications should not be\npersisted. An invalid or unrecognized dryRun directive will\nresult in an error response and no further processing of the\nrequest. Valid values are:\n- All: all dry run stages will be processed\n+optional\n+listType=atomic",
 	}
 }

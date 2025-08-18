@@ -337,8 +337,15 @@ func (VGPUDisplayOptions) SwaggerDoc() map[string]string {
 
 func (HostDevice) SwaggerDoc() map[string]string {
 	return map[string]string{
-		"deviceName": "DeviceName is the resource name of the host device exposed by a device plugin",
-		"tag":        "If specified, the virtual network interface address and its tag will be provided to the guest via config drive\n+optional",
+		"deviceName":   "DeviceName is the resource name of the host device exposed by a device plugin",
+		"tag":          "If specified, the virtual network interface address and its tag will be provided to the guest via config drive\n+optional",
+		"hotpluggable": "Hotpluggable indicates whether the host device can be hotplugged and hotunplugged.\n+optional",
+	}
+}
+
+func (HotplugHostDevice) SwaggerDoc() map[string]string {
+	return map[string]string{
+		"usb": "An usb host device attach to the pod.\n+optional",
 	}
 }
 
@@ -849,6 +856,13 @@ func (AccessCredential) SwaggerDoc() map[string]string {
 		"":             "AccessCredential represents a credential source that can be used to\nauthorize remote access to the vm guest\nOnly one of its members may be specified.",
 		"sshPublicKey": "SSHPublicKey represents the source and method of applying a ssh public\nkey into a guest virtual machine.\n+optional",
 		"userPassword": "UserPassword represents the source and method for applying a guest user's\npassword\n+optional",
+	}
+}
+
+func (HotplugHostDeviceSource) SwaggerDoc() map[string]string {
+	return map[string]string{
+		"":    "HotplugHostDeviceSource Represents the source of a host device which are capable\nof being hotplugged on a live running VMI.\nOnly one of its members may be specified.",
+		"usb": "Whether to attach an usb host device to the vmi.\n+optional",
 	}
 }
 
