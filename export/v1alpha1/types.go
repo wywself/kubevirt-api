@@ -172,10 +172,8 @@ type VirtualMachineExportVolume struct {
 type ExportVolumeFormat string
 
 const (
-	// KubeVirtQcow2 is the volume in qocw2 format
+	// KubeVirtRaw is the volume in RAW format
 	KubeVirtQcow2 ExportVolumeFormat = "qcow2"
-	// KubeVirtVmdk is the volume in vmdk format
-	KubeVirtVmdk ExportVolumeFormat = "vmdk"
 	// KubeVirtRaw is the volume in RAW format
 	KubeVirtRaw ExportVolumeFormat = "raw"
 	// KubeVirtGZ is the volume in gzipped RAW format.
