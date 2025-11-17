@@ -688,6 +688,17 @@ type HostDevice struct {
 	// If specified, the virtual network interface address and its tag will be provided to the guest via config drive
 	// +optional
 	Tag string `json:"tag,omitempty"`
+	// Hotpluggable indicates whether the host device can be hotplugged and hotunplugged.
+	// +optional
+	Hotpluggable bool `json:"hotpluggable,omitempty"`
+}
+
+type HotplugHostDevice struct {
+	// HostDevice same with HostDevice struct.
+	HostDevice `json:",inline"`
+	// An usb host device attach to the pod.
+	// +optional
+	USB *USBHostDevice `json:"usb,omitempty"`
 }
 
 type Disk struct {
@@ -1626,6 +1637,15 @@ type AccessCredential struct {
 	// password
 	// +optional
 	UserPassword *UserPasswordAccessCredential `json:"userPassword,omitempty"`
+}
+
+// HotplugHostDeviceSource Represents the source of a host device which are capable
+// of being hotplugged on a live running VMI.
+// Only one of its members may be specified.
+type HotplugHostDeviceSource struct {
+	//Whether to attach an usb host device to the vmi.
+	// +optional
+	USB *USBHostDevice `json:"usb,omitempty"`
 }
 
 // Network represents a network type and a resource that should be connected to the vm.

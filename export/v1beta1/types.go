@@ -182,6 +182,8 @@ const (
 	ArchiveGz ExportVolumeFormat = "tar.gz"
 	// KubeVirtQcow2 is the volume in RAW format
 	KubeVirtQcow2 ExportVolumeFormat = "qcow2"
+	// KubeVirtVmdk is the volume in RAW format
+	KubeVirtVmdk ExportVolumeFormat = "vmdk"
 )
 
 // VirtualMachineExportVolumeFormat contains the format type and URL to get the volume in that format

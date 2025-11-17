@@ -151,6 +151,10 @@ type VirtualMachineInstanceSpec struct {
 	// List of networks that can be attached to a vm's virtual interface.
 	// +kubebuilder:validation:MaxItems:=256
 	Networks []Network `json:"networks,omitempty"`
+	// List of hostDevices that can be attached to a vm's host device.
+	// +optional
+	// +listType=atomic
+	HostDevices []HotplugHostDevice `json:"hostDevices,omitempty"`
 	// Set DNS policy for the pod.
 	// Defaults to "ClusterFirst".
 	// Valid values are 'ClusterFirstWithHostNet', 'ClusterFirst', 'Default' or 'None'.
@@ -238,6 +242,10 @@ type VirtualMachineInstanceStatus struct {
 	PhaseTransitionTimestamps []VirtualMachineInstancePhaseTransitionTimestamp `json:"phaseTransitionTimestamps,omitempty"`
 	// Interfaces represent the details of available network interfaces.
 	Interfaces []VirtualMachineInstanceNetworkInterface `json:"interfaces,omitempty"`
+	// HostDeviceStatus represent the details of hotplug host devices.
+	// +optional
+	// +listType=atomic
+	HostDeviceStatus []HostDeviceStatus `json:"hostDeviceStatus,omitempty"`
 	// Guest OS Information
 	GuestOSInfo VirtualMachineInstanceGuestOSInfo `json:"guestOSInfo,omitempty"`
 	// Represents the status of a live migration
@@ -437,6 +445,59 @@ type VolumeStatus struct {
 	MemoryDumpVolume *DomainMemoryDumpInfo `json:"memoryDumpVolume,omitempty"`
 	// ContainerDiskVolume shows info about the containerdisk, if the volume is a containerdisk
 	ContainerDiskVolume *ContainerDiskInfo `json:"containerDiskVolume,omitempty"`
+}
+
+// HostDevicePhase indicates the current phase of the hotplug process.
+type HostDevicePhase string
+
+const (
+	// HostDeviceAttaching means the host device is attaching to the vm.
+	HostDeviceAttaching HostDevicePhase = "Attaching"
+	// HostDeviceReady means the host device is ready to be used by the VirtualMachineInstance.
+	HostDeviceReady HostDevicePhase = "Ready"
+	// HostDeviceDetaching means the host device is being detached from the vm.
+	HostDeviceDetaching HostDevicePhase = "Detaching"
+)
+
+type DeviceAddress struct {
+	Type       string `json:"type,attr"`
+	Domain     string `json:"domain,attr,omitempty"`
+	Bus        string `json:"bus,attr"`
+	Slot       string `json:"slot,attr,omitempty"`
+	Function   string `json:"function,attr,omitempty"`
+	Controller string `json:"controller,attr,omitempty"`
+	Target     string `json:"target,attr,omitempty"`
+	Unit       string `json:"unit,attr,omitempty"`
+	UUID       string `json:"uuid,attr,omitempty"`
+	Device     string `json:"device,attr,omitempty"`
+}
+
+// HostDeviceStatus represents information about the status of host devices attached to the pod.
+type HostDeviceStatus struct {
+	// Name is the name of the host device
+	Name string `json:"name"`
+	// Target is the target name used when adding the host device to the VM, eg: usb
+	Target *DeviceAddress `json:"target,omitempty"`
+	// An usb host device attach to the pod.
+	USB *USBHostDevice `json:"usb,omitempty"`
+	// Phase is the phase
+	Phase HostDevicePhase `json:"phase"`
+	// Reason is a brief description of why we are in the current hotplug host device phase
+	Reason string `json:"reason,omitempty"`
+	// Message is a detailed message about the current hotplug host device phase
+	Message string `json:"message,omitempty"`
+	// Hotpluggable indicates whether the device can be hotplugged and hotunplugged.
+	// +optional
+	Hotpluggable bool `json:"hotpluggable,omitempty"`
+}
+
+// GetFirstUSBSelector 返回该 HostDeviceStatus 中 USBHostDevice 的第一个 USBSelector，
+// 如果 USBHostDevice 不存在或 Selectors 为空，则返回 nil。
+func (hds *HostDeviceStatus) GetFirstUSBSelector() *USBSelector {
+	if hds.USB == nil || len(hds.USB.Selectors) == 0 {
+		return nil
+	}
+	return &hds.USB.Selectors[0]
 }
 
 // KernelInfo show info about the kernel image
@@ -1347,6 +1408,9 @@ const (
 	// MigrationInterfaceName is an arbitrary name used in virt-handler to connect it to a dedicated migration network
 	MigrationInterfaceName string = "migration0"
 
+	// HostDevicesHotplugAnnotation indicates the host devices hotplug to VMI pod
+	HostDevicesHotplugAnnotation string = "kubevirt.io/hostdevices-hotplug"
+
 	// EmulatorThreadCompleteToEvenParity alpha annotation will cause Kubevirt to complete the VMI's CPU count to an even parity when IsolateEmulatorThread options are requested
 	EmulatorThreadCompleteToEvenParity string = "alpha.kubevirt.io/EmulatorThreadCompleteToEvenParity"
 
@@ -1972,6 +2036,10 @@ type VirtualMachineStatus struct {
 	// hotplug on an active running VMI.
 	// +listType=atomic
 	VolumeRequests []VirtualMachineVolumeRequest `json:"volumeRequests,omitempty" optional:"true"`
+	// HostDeviceRequests indicates a list of host devices add or remove from the VMI template and
+	// hotplug on an active running VMI.
+	// +listType=atomic
+	HostDeviceRequests []VirtualMachineHostDeviceRequest `json:"hostDeviceRequests,omitempty" optional:"true"`
 
 	// VolumeSnapshotStatuses indicates a list of statuses whether snapshotting is
 	// supported by each volume.
@@ -2075,6 +2143,15 @@ type VirtualMachineVolumeRequest struct {
 	// RemoveVolumeOptions when set indicates a volume should be removed. The details
 	// within this field specify how to add the volume
 	RemoveVolumeOptions *RemoveVolumeOptions `json:"removeVolumeOptions,omitempty" optional:"true"`
+}
+
+type VirtualMachineHostDeviceRequest struct {
+	// AddHostDeviceOptions when set indicates a host device should be added. The details
+	// within this field specify how to add the host device
+	AddHostDeviceOptions *AddHostDeviceOptions `json:"addHostDeviceOptions,omitempty" optional:"true"`
+	// RemoveHostDeviceOptions when set indicates a host device should be removed. The details
+	// within this field specify how to remove the host device
+	RemoveHostDeviceOptions *RemoveHostDeviceOptions `json:"removeHostDeviceOptions,omitempty" optional:"true"`
 }
 
 type VirtualMachineStateChangeRequest struct {
@@ -2801,6 +2878,40 @@ type RemoveVolumeOptions struct {
 	DryRun []string `json:"dryRun,omitempty"`
 }
 
+// AddHostDeviceOptions is provided when dynamically hot plugging a host device
+type AddHostDeviceOptions struct {
+	// Name represents the name that maps to both the host device that
+	// should be added
+	Name string `json:"name"`
+	// HostDevice represents the hotplug host device that will be plugged into the running VMI
+	HostDevice *HostDevice `json:"hostDevice,omitempty"`
+	// HostDeviceSource is attached to the virt launcher and is populated with a host device of the vmi
+	HostDeviceSource *HotplugHostDeviceSource `json:"hostDeviceSource"`
+	// When present, indicates that modifications should not be
+	// persisted. An invalid or unrecognized dryRun directive will
+	// result in an error response and no further processing of the
+	// request. Valid values are:
+	// - All: all dry run stages will be processed
+	// +optional
+	// +listType=atomic
+	DryRun []string `json:"dryRun,omitempty"`
+}
+
+// RemoveHostDeviceOptions is provided when dynamically hot unplugging host device
+type RemoveHostDeviceOptions struct {
+	// Name represents the name that maps to both the host device that
+	// should be removed
+	Name string `json:"name"`
+	// When present, indicates that modifications should not be
+	// persisted. An invalid or unrecognized dryRun directive will
+	// result in an error response and no further processing of the
+	// request. Valid values are:
+	// - All: all dry run stages will be processed
+	// +optional
+	// +listType=atomic
+	DryRun []string `json:"dryRun,omitempty"`
+}
+
 type TokenBucketRateLimiter struct {
 	// QPS indicates the maximum QPS to the apiserver from this client.
 	// If it's zero, the component default will be used
@@ -3191,8 +3302,10 @@ type USBHostDevice struct {
 }
 
 type USBSelector struct {
-	Vendor  string `json:"vendor"`
-	Product string `json:"product"`
+	Vendor       string `json:"vendor"`
+	Product      string `json:"product"`
+	BusNumber    string `json:"busNumber"`
+	DeviceNumber string `json:"deviceNumber"`
 }
 
 // PciHostDevice represents a host PCI device allowed for passthrough
